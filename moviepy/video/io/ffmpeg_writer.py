@@ -83,13 +83,20 @@ class FFMPEG_VideoWriter:
             '-s', '%dx%d' % (size[0], size[1]),
             '-pix_fmt', 'rgba' if withmask else 'rgb24',
             '-r', '%.02f' % fps,
-            '-i', '-', '-an',
+            '-i', '-',
         ]
         if audiofile is not None:
             cmd.extend([
                 '-i', audiofile,
                 '-acodec', 'copy'
             ])
+            if filename[-4:] == '.mp4':
+                # this command transcodes the audio,
+                # since MP4s cannot carry PCM audio streams
+                # https://superuser.com/questions/277642/how-to-merge-audio-and-video-file-in-ffmpeg
+                cmd.extend(['-c:v', 'copy', '-c:a', 'aac', '-map', '0:v:0', '-map', '1:a:0'])
+        else:
+            cmd.extend(['-an',])
         cmd.extend([
             '-vcodec', codec,
             '-preset', preset,
@@ -123,6 +130,8 @@ class FFMPEG_VideoWriter:
         if os.name == "nt":
             popen_params["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
 
+        print('USING LOCAL VERSION OF VIDEOPY!!!')
+        print(' '.join(cmd))
         self.proc = sp.Popen(cmd, **popen_params)
 
 
